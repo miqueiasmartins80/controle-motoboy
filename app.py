@@ -6,7 +6,7 @@ from datetime import datetime
 # Configuração da página
 st.set_page_config(page_title="Controle do Motoca", layout="centered")
 
-st.title("🏍️ Meu Controle de Moto")
+st.title(" 🚀 CONTROLE ENTRADA E SAIDA")
 
 # --- CONEXÃO COM A SUA PLANILHA ---
 url_planilha = "https://docs.google.com/spreadsheets/d/1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg/edit?usp=sharing"
