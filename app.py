@@ -62,8 +62,8 @@ st.set_page_config(page_title="Controle do Motoca Pro", layout="centered")
 
 st.title("🏍️ Diário do Motoca (Salvo na Nuvem)")
 
-# URL da sua planilha (Cole o link da sua planilha aqui entre as aspas)
-url_planilha = "COLE_AQUI_O_LINK_DA_SUA_PLANILHA"
+# URL da sua planilha (https://docs.google.com/spreadsheets/d/1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg/edit?usp=drivesdk)
+url_planilha = "https://docs.google.com/spreadsheets/d/1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg/edit?usp=drivesdk"
 
 # Conectando com a planilha
 conn = st.connection("gsheets", type=GSheetsConnection)
