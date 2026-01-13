@@ -6,7 +6,7 @@ from datetime import datetime
 # Configuração da página
 st.set_page_config(page_title="Controle do Motoca", layout="centered")
 
-st.title(" 🚀 CONTROLE ENTRADA E SAIDA")
+st.markdown("<h1 style='text-align: center;'>📊 Controle de entrada e saida</h1>", unsafe_allow_html=True)
 
 # --- CONEXÃO COM A SUA PLANILHA ---
 url_planilha = "https://docs.google.com/spreadsheets/d/1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg/edit?usp=sharing"
