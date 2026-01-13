@@ -1,73 +1,58 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
-from datetime import datetime
 
 # Configuração da página
-st.set_page_config(page_title="Controle do Motoca", layout="centered")
+st.set_page_config(page_title="Relatório do Motoca", layout="centered")
 
-st.markdown("<h1 style='text-align: center;'>📊 Controle da lenda 🚀</h1>", unsafe_allow_html=True)
+# Título Centralizado
+st.markdown("<h1 style='text-align: center;'>📊 Controle de Gasto</h1>", unsafe_allow_html=True)
 
-# --- CONEXÃO COM A SUA PLANILHA ---
-url_planilha = "https://docs.google.com/spreadsheets/d/1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg/edit?usp=sharing"
+# --- CONFIGURAÇÃO DOS LINKS ---
+# 1. Cole o link do seu FORMULÁRIO aqui embaixo entre as aspas
+url_formulario = "https://forms.gle/cZm7A2bT7UVTbTcn8"
 
-try:
-    conn = st.connection("gsheets", type=GSheetsConnection)
-    df = conn.read(spreadsheet=url_planilha)
-    df = df.dropna(how="all")
-except Exception as e:
-    st.error("Aguardando conexão com a planilha...")
-    df = pd.DataFrame(columns=["Data", "Tipo", "Categoria", "Valor", "Obs"])
+# 2. Link da sua PLANILHA (ID da sua planilha que já temos)
+sheet_id = "1-SsKkyNLE8AnSMNMS22QXHeOeAUT9bzCzwoz7787JQg"
+url_csv = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
-# --- FORMULÁRIO DE LANÇAMENTO ---
-with st.expander("📝 Novo Lançamento", expanded=True):
-    tipo = st.radio("O que é?", ["Entrada", "Saída"])
-    col1, col2 = st.columns(2)
-    with col1:
-        if tipo == "Entrada":
-            cat = st.selectbox("Origem", ["Entregas App", "Particular", "Gorjeta", "Outros"])
-        else:
-            cat = st.selectbox("Destino", ["Gasolina", "Troca de Óleo", "Pneu/Relação", "Mecânico", "Almoço/Lanche", "Prestação"])
-        valor = st.number_input("Valor (R$)", min_value=0.0, step=1.0)
-    with col2:
-        data = st.date_input("Data", datetime.now())
-        obs = st.text_input("Detalhes (Ex: Posto Ipiranga)")
+# Botão de Lançamento (Fica no topo para ser rápido)
+st.link_button("➕ LANÇAR NOVO GAISTO/GANHO", url_formulario, use_container_width=True)
 
-    if st.button("✅ Salvar para Sempre"):
-        novo_registro = pd.DataFrame([{
-            "Data": data.strftime("%d/%m/%Y"),
-            "Tipo": tipo,
-            "Categoria": cat,
-            "Valor": valor,
-            "Obs": obs
-        }])
-        df_atualizado = pd.concat([df, novo_registro], ignore_index=True)
-        conn.update(spreadsheet=url_planilha, data=df_atualizado)
-        st.success("Boa! Gravado na planilha.")
-        st.cache_data.clear()
-        st.rerun()
-
-# --- RELATÓRIOS ---
 st.divider()
-st.header("📊 Resumo Financeiro")
 
-if not df.empty:
-    df['Valor'] = pd.to_numeric(df['Valor'], errors='coerce').fillna(0)
-    ganhos = df[df['Tipo'] == "Entrada"]['Valor'].sum()
-    gastos = df[df['Tipo'] == "Saída"]['Valor'].sum()
-    saldo = ganhos - gastos
-
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Ganhei", f"R$ {ganhos:.2f}")
-    c2.metric("Gastei", f"R$ {gastos:.2f}")
-    c3.metric("Sobra", f"R$ {saldo:.2f}")
-
-    st.subheader("Onde está indo o dinheiro?")
-    df_gastos = df[df['Tipo'] == "Saída"]
-    if not df_gastos.empty:
-        st.bar_chart(df_gastos.groupby("Categoria")["Valor"].sum())
+# --- CARREGAR DADOS ---
+try:
+    # Lendo o CSV da planilha (Google Sheets atualiza o CSV a cada 5 min aprox.)
+    df = pd.read_csv(url_csv)
     
-    st.write("### Histórico de Lançamentos")
-    st.dataframe(df.sort_index(ascending=False))
-else:
-    st.info("Sua planilha está vazia. Comece a lançar seus ganhos e gastos acima!")
+    if not df.empty:
+        # Ajustando os nomes das colunas caso o Form mude (opcional)
+        # Se o Form criar nomes grandes, o código tenta tratar:
+        df.columns = ["Timestamp", "Data", "Tipo", "Categoria", "Valor", "Obs"]
+        
+        # Converte valor para número (remove R$ se você digitar)
+        df['Valor'] = pd.to_numeric(df['Valor'], errors='coerce').fillna(0)
+
+        # MÉTRICAS
+        ganhos = df[df['Tipo'] == "Entrada"]['Valor'].sum()
+        gastos = df[df['Tipo'] == "Saída"]['Valor'].sum()
+        sobra = ganhos - gastos
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Ganhei", f"R$ {ganhos:.2f}")
+        c2.metric("Gastei", f"R$ {gastos:.2f}")
+        c3.metric("Sobra", f"R$ {sobra:.2f}")
+
+        # GRÁFICO
+        st.subheader("Destino dos Gastos")
+        df_gastos = df[df['Tipo'] == "Saída"]
+        if not df_gastos.empty:
+            st.bar_chart(df_gastos.groupby("Categoria")["Valor"].sum())
+
+        st.write("### Histórico Recente")
+        st.dataframe(df.sort_index(ascending=False), use_container_width=True)
+    else:
+        st.info("Planilha vazia. Clique no botão acima para lançar!")
+
+except Exception as e:
+    st.error("Dica: No Google Sheets, vá em Arquivo > Compartilhar > Publicar na Web e selecione CSV para o app ler os dados instantaneamente.")
