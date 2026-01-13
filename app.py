@@ -53,4 +53,62 @@ if not df.empty:
     
     st.dataframe(df.sort_values(by="Data", ascending=False))
 else:
-    st.info("Nenhum dado lançado ainda. Comece a registrar seus ganhos e gastos!")
+    st.info("Nenhum dado lançado ainda. Comece a registrar seus ganhos e gastos!")import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+from datetime import datetime
+
+st.set_page_config(page_title="Controle do Motoca Pro", layout="centered")
+
+st.title("🏍️ Diário do Motoca (Salvo na Nuvem)")
+
+# URL da sua planilha (Cole o link da sua planilha aqui entre as aspas)
+url_planilha = "COLE_AQUI_O_LINK_DA_SUA_PLANILHA"
+
+# Conectando com a planilha
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Lendo os dados já existentes
+df = conn.read(spreadsheet=url_planilha, usecols=[0,1,2,3,4])
+df = df.dropna(how="all")
+
+# --- FORMULÁRIO ---
+with st.expander("📝 Novo Lançamento", expanded=True):
+    tipo = st.radio("O que é?", ["Entrada", "Saída"])
+    col1, col2 = st.columns(2)
+    with col1:
+        if tipo == "Entrada":
+            cat = st.selectbox("Origem", ["Entregas App", "Particular", "Gorjeta", "Outros"])
+        else:
+            cat = st.selectbox("Destino", ["Gasolina", "Óleo", "Peças", "Comida", "Outros"])
+        valor = st.number_input("Valor R$", min_value=0.0)
+    with col2:
+        data = st.date_input("Data", datetime.now())
+        obs = st.text_input("Detalhes")
+
+    if st.button("✅ Salvar para Sempre"):
+        novo_dado = pd.DataFrame([{
+            "Data": data.strftime("%d/%m/%Y"),
+            "Tipo": tipo,
+            "Categoria": cat,
+            "Valor": valor,
+            "Obs": obs
+        }])
+        
+        # Junta o novo dado com os antigos e salva
+        df_atualizado = pd.concat([df, novo_dado], ignore_index=True)
+        conn.update(spreadsheet=url_planilha, data=df_atualizado)
+        st.success("Salvo na sua Planilha do Google!")
+        st.cache_data.clear() # Limpa o cache para mostrar o novo dado
+
+# --- RELATÓRIO ---
+st.divider()
+if not df.empty:
+    ganhos = pd.to_numeric(df[df['Tipo'] == 'Entrada']['Valor']).sum()
+    gastos = pd.to_numeric(df[df['Tipo'] == 'Saída']['Valor']).sum()
+    
+    c1, c2 = st.columns(2)
+    c1.metric("Total Ganho", f"R$ {ganhos:.2f}")
+    c2.metric("Total Gasto", f"R$ {gastos:.2f}", delta_color="inverse")
+    
+    st.dataframe(df)
